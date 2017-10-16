@@ -4,6 +4,20 @@ import random
 import numpy
 import matplotlib.pyplot as plt
 
+###### Solar shading simulator for nx-capstone #####
+# The program is broken into two halves; this first half declares functions
+# to use, much like you need to make new .m files for each function in MATLAB
+# The second half starts at the "if "__name__" == __main__:" line, which
+# is all the code execution.
+
+# You should write your code under the "if "__name__" == __main__:" line
+# I have some examples of what you need to do to get the program to work there
+
+
+
+
+
+
 class row():
     def __init__(self,sn):
         self.angle = -60.0 # Tilt angle, -East / +West
@@ -28,7 +42,8 @@ class plant():
         # Initialize rows
         self.__true_rows = []
         # Create a random order for all SPCs
-        self.__random_order = [6, 15, 0, 17, 19, 8, 10, 3, 16, 7, 13, 4, 9, 1, 11, 14, 12, 5, 2, 18]
+        self.__random_order = [6, 15, 0, 17, 19, 8, 10, 3, 16, 7, 13, 
+            4, 9, 1, 11, 14, 12, 5, 2, 18]
         # Initialize the serial number counter
         count = 1
         # Create all of the rows in proper order and assign serial number
@@ -39,8 +54,9 @@ class plant():
                 count += 1
                 r.append(row(serial_number))
             self.__true_rows.append(r)
-        # Flatten the true_rows list and create a flat list in the random order
-        self.__rows = numpy.array([i for sublist in self.__true_rows for i in sublist])[self.__random_order]
+        # Flatten the true_rows list and create a flat list in random order
+        self.__rows = numpy.array([i for sublist in self.__true_rows for i in\
+             sublist])[self.__random_order]
         self.rows = [i.serial_number for i in self.__rows]
         # Randomize all heights and set random row distances
         self.__randomize_heights()
@@ -133,18 +149,27 @@ class plant():
                     b1 = row1.h
 
                     m2 = numpy.tan(numpy.deg2rad(self.sun_alt))
-                    b2 = row2.h - row2.p/2*numpy.sin(numpy.deg2rad(row2.angle))-m2*(r12-row2.p/2*numpy.cos(numpy.deg2rad(row2.angle)))
+                    b2 = row2.h - row2.p/2 \
+                        *numpy.sin(numpy.deg2rad(row2.angle))-m2*(r12-row2.p \
+                            /2*numpy.cos(numpy.deg2rad(row2.angle)))
                     x_int = (b1-b2)/(m2-m1)
                     y_int = m1*x_int + b1
                     x_end = row1.p/2 * numpy.cos(numpy.deg2rad(row1.angle))
                     y_end = m1*x_end + b1
-                    if x_int >= row1.p/2 * numpy.cos(numpy.deg2rad(row1.angle)):
+                    if x_int >= row1.p/2*numpy.cos(numpy.deg2rad(row1.angle)):
                         row1.shade = 0
                     else:
-                        row1.shade = numpy.sqrt((x_end-x_int)**2 + (y_end-y_int)**2)
+                        row1.shade = numpy.sqrt((x_end-x_int)**2 
+                            + (y_end-y_int)**2)
                         if 0:
-                            plt.plot([0,row1.p/2*numpy.cos(numpy.deg2rad(row1.angle))],[row1.h,row1.h+row1.p/2*numpy.sin(numpy.deg2rad(row1.angle))],'b-')
-                            plt.plot([r12,r12-row2.p/2*numpy.cos(numpy.deg2rad(row2.angle))],[row2.h,row2.h-row2.p/2*numpy.sin(numpy.deg2rad(row2.angle))],'r-')
+                            plt.plot([0,row1.p/2
+                                *numpy.cos(numpy.deg2rad(row1.angle))],
+                                [row1.h,row1.h+row1.p/2
+                                *numpy.sin(numpy.deg2rad(row1.angle))],'b-')
+                            plt.plot([r12,r12-row2.p/2
+                                *numpy.cos(numpy.deg2rad(row2.angle))],
+                                [row2.h,row2.h-row2.p/2
+                                *numpy.sin(numpy.deg2rad(row2.angle))],'r-')
                             plt.axis('equal')
                             x = range(0,5)
                             plt.plot(x,m2*numpy.array(x)+b2,'k--')
@@ -159,7 +184,8 @@ class plant():
             for j in range(0, self.__size[1]):
                 s.append(self.__true_rows[i][j].shade)
             shades.append(s)
-        shades = numpy.array([i.shade for sublist in self.__true_rows for i in sublist])[self.__random_order]
+        shades = numpy.array([i.shade for sublist in self.__true_rows for i \
+            in sublist])[self.__random_order]
 
         d = {}
         for idx,row in enumerate(self.__rows):
@@ -173,11 +199,44 @@ class plant():
 
 
 if __name__ == '__main__':
-    plant = plant()
-    rows = plant.rows
+    # First you need to create your plant class. We'll call ours "my_plant"
+    my_plant = plant()
+
+
+    # You can then find out what SPCs are in your plant by calling the .rows
+    # attribute, which is just a list of all the serial numbers in no particu-
+    # lar order.
+    spc_serial_numbers = my_plant.rows
+    # Print it out to the console so you can see
+    print "Here are your serial numbers!"
+    print spc_serial_numbers
+    print "\n\n"
+
+    # You can find out how much each row is shaded by calling the .shade
+    # attirbute. It will return a dictionary with the "key" value correspond-
+    # ing to the serial number, and the "value" corresponding to the amount
+    # of shade on the panel in meters.
+    print "Here are the current shading values"
+    print my_plant.shade
+    print "\n\n"
+
+
+
+    # Now let's try to move some rows and change the shade. We'll need a 
+    # dictionary for this. We first create an empty dictionary
     d = {}
-    for row in rows:
-        d[row] = 0
-    print plant.shade
-    plant.move_rows(d)
-    print plant.shade
+    # And then iterate through all the SPC serial numbers we got earlier, and
+    # assign the "key" value to the serial number, and the "value" to the
+    # desired tilt angle
+    for serial_number in spc_serial_numbers:
+        d[serial_number] = 0
+    # After our dictionary is made, we can use the .move_rows() command and
+    # move the rows in our plant.
+    my_plant.move_rows(d)
+
+
+    # Every time you move the rows, the plant will automatically calculate
+    # the shading on each panel. We can call .shade again to see how our
+    # move affected the plant!
+    print "These are the shading values after your move!"
+    print my_plant.shade

@@ -129,11 +129,13 @@ class plant():
                 if row.serial_number == key:
                     row.angle = movements[key]
         self.evaluate_shade()
+        return self.shade
 
     def move_sun(self,alt):
         # Moves the sun to alt and reevaluates shade
         self.sun_alt = alt
         self.evaluate_shade()
+        return self.shade
 
     def evaluate_shade(self):
         for i in range(0, self.__size[0]):

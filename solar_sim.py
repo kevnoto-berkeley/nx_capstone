@@ -32,7 +32,7 @@ class row():
     def __str__(self):
         return self.serial_number
     def __repr__(self):
-        return "<Row: %s @ %02d deg>" % (self.serial_number,self.angle)
+        return "<Row: %s @ %02d deg, %.2f shaded>" % (self.serial_number,self.angle,self.shade)
 
 class plant():
     def __init__(self):
@@ -40,22 +40,22 @@ class plant():
         self.__size = [4, 5]
         self.__n = self.__size[0] * self.__size[1]
         # Initialize rows
-        self.__true_rows = []
+        self.true_rows = []
         # Create a random order for all SPCs
         self.__random_order = [6, 15, 0, 17, 19, 8, 10, 3, 16, 7, 13, 
             4, 9, 1, 11, 14, 12, 5, 2, 18]
         # Initialize the serial number counter
-        count = 1
+        count = 0
         # Create all of the rows in proper order and assign serial number
         for i in range(self.__size[0]):
             r = []
             for j in range(self.__size[1]):
-                serial_number = "SPC_%02d" % count
+                serial_number = "SPC_%02d" % (self.__random_order[count]+1)
                 count += 1
                 r.append(row(serial_number))
-            self.__true_rows.append(r)
+            self.true_rows.append(r)
         # Flatten the true_rows list and create a flat list in random order
-        self.__rows = numpy.array([i for sublist in self.__true_rows for i in\
+        self.__rows = numpy.array([i for sublist in self.true_rows for i in\
              sublist])[self.__random_order]
         self.rows = [i.serial_number for i in self.__rows]
         # Randomize all heights and set random row distances
@@ -68,24 +68,30 @@ class plant():
         # Evaluate current plant shade
         self.evaluate_shade()
 
+    def __repr__(self):
+        s = ""
+        for row in self.true_rows:
+            s += str(row) + "\n"
+        return s
+
     def __set_row_distances(self):
         # changes the inter-row distances of all rows to the list below
-        row_dists = [2.1994503310212945,
-                 2.1924123054909237,
-                 1.8161816117755416,
-                 2.1923377393746035,
-                 1.8625206513615749,
-                 2.198134897781741,
-                 1.9331977707061694,
-                 1.8919942264237994,
-                 2.130484914527256,
-                 2.144457928821847,
-                 2.113389155769876,
-                 1.9527918086500224,
-                 2.1237454086150116,
-                 2.0368071859041588,
-                 2.0476902705924065,
-                 2.0477728684289342]
+        row_dists = [2.0002996317,
+                1.9882354791,
+                1.96684390181,
+                1.96069514162,
+                2.02803445507,
+                1.99504888156,
+                2.01621945466,
+                2.00230869091,
+                1.98767105864,
+                1.95160802133,
+                2.00561340961,
+                2.03403038484,
+                2.0118066417,
+                2.04580375887,
+                1.97722309242,
+                2.01898009575,]
         self.inter_row_dists = []
         for i in range(self.__size[0]):
             r = []
@@ -96,30 +102,30 @@ class plant():
 
     def __randomize_heights(self):
         # changes the heights of all rows to the list below
-        heights = [1.6586108485739648,
-                 1.470899241827537,
-                 1.674723415789511,
-                 1.6580235111869928,
-                 1.3561008099657383,
-                 1.3492250312176315,
-                 1.6086498117358556,
-                 1.6218726536245842,
-                 1.5177241997076782,
-                 1.4951958701141719,
-                 1.5245310014528954,
-                 1.568371310768304,
-                 1.530625748600197,
-                 1.4126487981847198,
-                 1.5826075743727372,
-                 1.6288214372154493,
-                 1.3531280949096058,
-                 1.6045129502693565,
-                 1.361206179419099,
-                 1.3482560751896173]
+        heights = [1.57268476517,
+                1.47766647019,
+                1.50751702603,
+                1.56912717664,
+                1.49434822186,
+                1.58583272025,
+                1.52406622356,
+                1.40642478742,
+                1.41750472147,
+                1.42107265238,
+                1.5235258482,
+                1.58925409889,
+                1.56809437096,
+                1.52878004193,
+                1.47051924057,
+                1.587994754,
+                1.54181340644,
+                1.59659037451,
+                1.48319296975,
+                1.43860845234,]
 
         for i in range(self.__size[0]):
             for j in range(self.__size[1]):
-                self.__true_rows[i][j].h = heights.pop(0)
+                self.true_rows[i][j].h = heights.pop(0)
 
     def move_rows(self,movements):
         # Takes in a dict of serial numbers with values that are movements
@@ -146,7 +152,7 @@ class plant():
                 else:
                     r12 = self.inter_row_dists[i][j-1]
                     row1 = last
-                    row2 = self.__true_rows[i][j]
+                    row2 = self.true_rows[i][j]
                     m1 = numpy.tan(numpy.deg2rad(row1.angle))
                     b1 = row1.h
 
@@ -177,16 +183,16 @@ class plant():
                             plt.plot(x,m2*numpy.array(x)+b2,'k--')
                             print "Intersection: %s, %s" % (x_int,y_int)
                             plt.show()
-                last = self.__true_rows[i][j]
+                last = self.true_rows[i][j]
 
 
         shades = []
         for i in range(0, self.__size[0]):
             s = []
             for j in range(0, self.__size[1]):
-                s.append(self.__true_rows[i][j].shade)
+                s.append(self.true_rows[i][j].shade)
             shades.append(s)
-        shades = numpy.array([i.shade for sublist in self.__true_rows for i \
+        shades = numpy.array([i.shade for sublist in self.true_rows for i \
             in sublist])[self.__random_order]
 
         d = {}
@@ -196,9 +202,8 @@ class plant():
         return self.shade
 
     def check_guess(self,guess):
-        actual = [[j.serial_number for j in i] for i in self.__true_rows]
+        actual = [[j.serial_number for j in i] for i in self.true_rows]
         return numpy.array(actual)== guess
-
 
 if __name__ == '__main__':
     # First you need to create your plant class. We'll call ours "my_plant"

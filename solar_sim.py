@@ -212,6 +212,13 @@ if __name__ == '__main__':
     my_plant = plant()
 
 
+    # If you need to look at the "answer sheet" and figure out what your site
+    # looks like right now, you can use the .true_rows attribute to show it
+    print "Here is what the actual plant looks like right now"
+    print(my_plant)
+    print "\n\n"
+
+
     # You can then find out what SPCs are in your plant by calling the .rows
     # attribute, which is just a list of all the serial numbers in no particu-
     # lar order.
@@ -238,7 +245,7 @@ if __name__ == '__main__':
     # assign the "key" value to the serial number, and the "value" to the
     # desired tilt angle
     for serial_number in spc_serial_numbers:
-        d[serial_number] = 0
+        d[serial_number] = -45
     # After our dictionary is made, we can use the .move_rows() command and
     # move the rows in our plant.
     my_plant.move_rows(d)
@@ -249,3 +256,4 @@ if __name__ == '__main__':
     # move affected the plant!
     print "These are the shading values after your move!"
     print my_plant.shade
+    print "\n\n"

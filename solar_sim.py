@@ -133,7 +133,7 @@ class plant():
         for key in keys:
             for row in self.__rows:
                 if row.serial_number == key:
-                    row.angle = movements[key]
+                    row.move_to(movements[key])
         self.evaluate_shade()
         return self.shade
 
@@ -167,8 +167,9 @@ class plant():
                     if x_int >= row1.p/2*numpy.cos(numpy.deg2rad(row1.angle)):
                         row1.shade = 0
                     else:
-                        row1.shade = numpy.sqrt((x_end-x_int)**2 
+                        shade_dist = numpy.sqrt((x_end-x_int)**2 
                             + (y_end-y_int)**2)
+                        row1.shade = 1 if shade_dist > 1 else shade_dist
                         if 0:
                             plt.plot([0,row1.p/2
                                 *numpy.cos(numpy.deg2rad(row1.angle))],
@@ -204,6 +205,7 @@ class plant():
     def check_guess(self,guess):
         actual = [[j.serial_number for j in i] for i in self.true_rows]
         return numpy.array(actual)== guess
+
 
 if __name__ == '__main__':
     # First you need to create your plant class. We'll call ours "my_plant"

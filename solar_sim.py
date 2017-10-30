@@ -233,6 +233,7 @@ class plant():
                     # add the new shading value to the shade dict
                     shades[row1.serial_number] = row1.shade
                 last = self.true_rows[i][j]
+            shades[row2.serial_number] = 0
 
         # Assign new shading values to dict
         self.shade = shades

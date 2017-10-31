@@ -243,8 +243,15 @@ class plant():
         # Check the guess list vs. the actual list.
 
         # Create a flat-ordered list to check against
-        actual = [[j.serial_number for j in i] for i in self.true_rows]
-        return numpy.array(actual) == guess
+        correct = 0
+        incorrect = 0
+        for i in range(len(guess)):
+            for j in range(len(guess[i])):
+                if self.true_rows[i][j].serial_number == guess[i][j]:
+                    correct += 1
+                else:
+                    incorrect += 1
+        return correct/(correct+incorrect)
 
 
 class plant_100MW(plant):

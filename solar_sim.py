@@ -64,7 +64,7 @@ class plant():
             for j in range(self.size[1]):
                 serial_number = "SPC_%02d" % (self.random_order[count]+1)
                 # Add the serial number to the dict of indicies
-                self.true_rows_dict[serial_number] = count
+                self.true_rows_dict[serial_number] = (i,j)
                 count += 1
                 r.append(row(serial_number))
             self.true_rows.append(r)
@@ -73,7 +73,7 @@ class plant():
              sublist])[self.random_order]
         self.rows = [i.serial_number for i in self.true_rows_list]
         # Create an attribute to show the first column's order
-        self.column0_order = [i.serial_number for sublist in self.true_rows for i in sublist[-1:-1]]
+        self.column0_order = [i.serial_number for sublist in self.true_rows for i in sublist[-1:]]
         # Randomize all heights and set random row distances
         self.randomize_heights()
         self.set_row_distances()
@@ -165,7 +165,7 @@ class plant():
                 raise BaseException("Your SPC could not be found in the Plant. Your Key: %s" % key)
 
             # Assign the row, and move it if the current angle changes
-            row = self.true_rows_list[self.true_rows_dict[key]]
+            row = self.true_rows[self.true_rows_dict[key][0]][self.true_rows_dict[key][1]]
             if row.angle != movements[key]:
                 self.tracker_moves += 1
                 dist = abs(row.angle - movements[key])
@@ -272,7 +272,7 @@ class plant_100MW(plant):
             r = []
             for j in range(self.size[1]):
                 serial_number = "SPC_%04d" % (self.random_order[count]+1)
-                self.true_rows_dict[serial_number] = count
+                self.true_rows_dict[serial_number] = (i,j)
                 count += 1
                 r.append(row(serial_number))
             self.true_rows.append(r)
@@ -281,7 +281,7 @@ class plant_100MW(plant):
              sublist])[self.random_order]
         self.rows = [i.serial_number for i in self.true_rows_list]
         # Create an attribute to show the first column's order
-        self.column0_order = [i.serial_number for sublist in self.true_rows for i in sublist[-1:-1]]
+        self.column0_order = [i.serial_number for sublist in self.true_rows for i in sublist[-1:]]
         # Randomize all heights and set random row distances
         self.randomize_heights()
         self.set_row_distances()

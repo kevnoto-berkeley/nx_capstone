@@ -3,6 +3,7 @@ import pandas
 import random
 import numpy
 import matplotlib.pyplot as plt
+np = numpy
 
 ###### Solar shading simulator for nx-capstone #####
 # The program is broken into two halves; this first half declares functions
@@ -179,6 +180,13 @@ class plant():
         self.evaluate_shade()
         return self.shade
 
+    def move_all_rows(self,position):
+        for r in self.true_rows:
+            for row in r:
+                row.angle = position
+        self.evaluate_shade()
+        return self.shade
+
     def move_sun(self,alt):
         # Moves the sun to alt and reevaluates shade
         self.sun_alt = alt
@@ -186,6 +194,11 @@ class plant():
         return self.shade
 
     def evaluate_shade(self):
+        if self.sun_alt >= 90:
+            self.shade = self.evaluate_shade_west()
+            return self.shade
+            
+        # print "Evaluating EAST shading"
         # Use geometry to calculate shading
 
         # Create dict for storing shading values
@@ -218,7 +231,7 @@ class plant():
                     y_int = m1*x_int + b1
                     x_end = row1.p/2 * numpy.cos(numpy.deg2rad(row1.angle))
                     y_end = m1*x_end + b1
-
+ 
                     # Evaluate the distance from row1's panel's midpoint and check if it shades
                     # if NOT, shade = 0
                     # if YES, shading distance is the 2-norm distance to origin
@@ -232,8 +245,87 @@ class plant():
                         row1.shade = 1 if shade_dist > 1 else shade_dist
                     # add the new shading value to the shade dict
                     shades[row1.serial_number] = row1.shade
+                    self.true_rows[i][j-1].shade = row1.shade
                 last = self.true_rows[i][j]
             shades[row2.serial_number] = 0
+            self.true_rows[i][j].shade = 0
+
+        # Assign new shading values to dict
+        self.shade = shades
+        return self.shade
+
+    def evaluate_shade_west(self):
+        # print "Calculating WEST Shading"
+        # Use geometry to calculate shading
+
+        # Create dict for storing shading values
+        shades = {}
+
+        # Iterate through rows from North to South, and West to East to evaluate shade
+        for i in range(0, self.size[0]):
+            last = None
+            for j in reversed(range(0, self.size[1])):
+                # Skip the first Western row
+                if last is None:
+                    pass
+                # Calculate shade from row2 onto row1
+                else:
+                    # Get the inter-row distance
+                    r12 = self.inter_row_dists[i][j-1]
+                    # Assign rows 1 and 2
+                    row1 = last
+                    row2 = self.true_rows[i][j]
+                    # Create the line of row1's solar panel
+                    m1 = numpy.tan(numpy.radians(-row1.angle))
+                    b1 = row1.h
+                    # Create the line of shade originating from row2's tip at the angle of sun_alt
+                    m2 = numpy.tan(numpy.deg2rad(180-self.sun_alt))
+                    b2 = row2.h - row2.p/2 \
+                        *numpy.sin(numpy.deg2rad(-row2.angle))-m2*(r12-row2.p \
+                            /2*numpy.cos(numpy.deg2rad(-row2.angle)))
+                    # Intersect the two lines in cartesian coordinates
+                    x_int = (b1-b2)/(m2-m1)
+                    y_int = m1*x_int + b1
+                    x_end = row1.p/2 * numpy.cos(numpy.deg2rad(-row1.angle))
+                    y_end = m1*x_end + b1
+
+                    ##########################
+                    #### Debug for plotting ###
+                    ##########################
+                    if False and row1.angle >= 0 and row2.angle >= 0:
+                        plt.plot(
+                            [r12-row2.p/2*np.cos(np.radians(row2.angle)),r12,r12,0,0,row1.p/2*np.cos(np.radians(row1.angle))],
+                            [row2.h-row2.p/2*np.sin(np.radians(-row2.angle)),row2.h,0,0,row1.h,row1.h+row1.p/2*np.sin(np.radians(-row1.angle))]
+                            )
+                        plt.plot([x_int],[y_int],'ro')
+                        plt.plot([0,r12],[b2,m2*r12+b2],'b-')
+                        plt.plot([0,r12],[b1,m1*r12+b1],'b-')
+                        plt.plot(x_end,y_end,'gx')
+                        plt.grid()
+                        plt.title('m1=%.2f,m2=%.2f,r1_ang=%.2f,r2_ang=%.2f' % (m1,m2,(row1.angle),(row2.angle)))
+                        plt.axis('equal')
+                        plt.show()
+                    ##########################
+                    ### end
+                    ##########################
+
+                    # Evaluate the distance from row1's panel's midpoint and check if it shades
+                    # if NOT, shade = 0
+                    # if YES, shading distance is the 2-norm distance to origin
+                    if x_int >= row1.p/2*numpy.cos(numpy.deg2rad(-row1.angle)):
+                        row1.shade = 0
+                    else:
+                        # 2-norm to row1's midpoint
+                        shade_dist = numpy.sqrt((x_end-x_int)**2 
+                            + (y_end-y_int)**2)
+                        # Normalize to 1 if larger than 1
+                        row1.shade = 1 if shade_dist > 1 else shade_dist
+                    # add the new shading value to the shade dict
+                    shades[row1.serial_number] = row1.shade
+                    self.true_rows[i][j+1].shade = row1.shade
+                last = self.true_rows[i][j]
+            shades[row2.serial_number] = 0
+            self.true_rows[i][j].shade = 0
 
         # Assign new shading values to dict
         self.shade = shades
@@ -320,7 +412,7 @@ class plant_100MW(plant):
 
 if __name__ == '__main__':
     # First you need to create your plant class. We'll call ours "my_plant"
-    my_plant = plant_100MW()
+    my_plant = plant()
 
     # If you need to look at the "answer sheet" and figure out what your site
     # looks like right now, you can use the .true_rows attribute to show it
@@ -393,3 +485,13 @@ if __name__ == '__main__':
 
     # Plants will also keep track of the total degrees moved in a plant.
     print "%.2f individual degrees moved" % my_plant.tracker_move_degrees
+
+    # I've added compatibility for West shading. In our simplified model, we can just consider
+    # sun coming from the west as an altitude > 90 degrees
+    print "Calculating WEST shading"
+    my_plant.move_sun(175)
+    d = {}
+    for serial_number in my_plant.rows:
+        d[serial_number] = 45
+    my_plant.move_rows(d)
+    print my_plant

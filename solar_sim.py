@@ -93,7 +93,7 @@ class plant():
             s += str(row) + "\n"
         return s
 
-    def set_row_distances(self):
+    def set_row_distances(self, value = None):
         # changes the inter-row distances of all rows to the list below
         row_dists = [2.0002996317,
                 1.9882354791,
@@ -114,8 +114,11 @@ class plant():
         self.inter_row_dists = []
         for i in range(self.size[0]):
             r = []
-            for j in range(self.size[1]-1):
-                r.append(row_dists.pop(0))
+            if value is None:
+                for j in range(self.size[1]-1):
+                    r.append(row_dists.pop(0))
+            else:
+                r = [value] * (self.size[1]-1)
             self.inter_row_dists.append(r)
 
 
@@ -391,14 +394,17 @@ class plant_100MW(plant):
         # Evaluate current plant shade
         self.evaluate_shade()
 
-    def set_row_distances(self):
+    def set_row_distances(self, value = None):
         # changes the inter-row distances of all rows to the list below
         row_dists = [random.uniform(1.95,2.05) for i in range(self.n-self.size[0])]
         self.inter_row_dists = []
         for i in range(self.size[0]):
             r = []
-            for j in range(self.size[1]-1):
-                r.append(row_dists.pop(0))
+            if value is None:
+                for j in range(self.size[1]-1):
+                    r.append(row_dists.pop(0))
+            else:
+                r= [value]*(self.size[1]-1)
             self.inter_row_dists.append(r)
 
 
@@ -409,6 +415,51 @@ class plant_100MW(plant):
         for i in range(self.size[0]):
             for j in range(self.size[1]):
                 self.true_rows[i][j].h = heights.pop(0)
+
+class plant_custom(plant_100MW):
+    ### 100MW version of plant, this will not be a static-random, it will be truly random every time
+    ### Code works very similar to regular plant, just scaled up and with truly random values/order
+    def __init__(self,x,y):
+        # Make a fake site of dimensions [rows,columns]
+        self.size = [x, y]
+        self.n = self.size[0] * self.size[1]
+        # Initialize rows
+        self.true_rows = []
+        # Create a random order for all SPCs
+        self.random_order = range(0,self.n)
+        random.shuffle(self.random_order)
+        # Initialize the serial number counter
+        count = 0
+        self.true_rows = []
+        self.true_rows_dict = {}
+        self.tracker_moves = 0
+        self.tracker_move_degrees = 0
+        self.plant_moves = 0
+        self.plant_moves_max_degrees = 0
+        # Create all of the rows in proper order and assign serial number
+        for i in range(self.size[0]):
+            r = []
+            for j in range(self.size[1]):
+                serial_number = "SPC_%04d" % (self.random_order[count]+1)
+                self.true_rows_dict[serial_number] = (i,j)
+                count += 1
+                r.append(row(serial_number))
+            self.true_rows.append(r)
+        # Flatten the true_rows list and create a flat list in random order
+        self.true_rows_list = numpy.array([i for sublist in self.true_rows for i in\
+             sublist])[self.random_order]
+        self.rows = [i.serial_number for i in self.true_rows_list]
+        # Create an attribute to show the first column's order
+        self.column0_order = [i.serial_number for sublist in self.true_rows for i in sublist[-1:]]
+        # Randomize all heights and set random row distances
+        self.randomize_heights()
+        self.set_row_distances()
+
+        # The sun altitude
+        self.sun_alt = 5
+
+        # Evaluate current plant shade
+        self.evaluate_shade()
 
 if __name__ == '__main__':
     # First you need to create your plant class. We'll call ours "my_plant"

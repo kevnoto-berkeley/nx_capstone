@@ -1,6 +1,8 @@
 from solar_sim import row,plant,plant_100MW,plant_custom
 import numpy as np
 import pandas
+import sys
+import time
 
 def assign_binary(n_t):
     """
@@ -21,7 +23,7 @@ def assign_binary(n_t):
         return r
 
 
-def evaluate_crit_shading(p,atype,sun_increment = .001):
+def evaluate_crit_shading(p,atype,sun_increment = .01):
     if atype == 'east':
         p.move_sun(0)
     else:
@@ -36,6 +38,7 @@ def evaluate_crit_shading(p,atype,sun_increment = .001):
     found = []
     # Loop until everything isnt shaded
     while len(found) < p.n:
+        print_progress(len(found),p.n,prefix="Sun Alt: "+str(p.sun_alt),bar_length=50)
         # print "##### Iteration %s #####" % counter
         # print "Sun altitude is: %s" % p.sun_alt
         # print "Found %s rows" % len(found)
@@ -92,6 +95,36 @@ def evaluate_crit_shading(p,atype,sun_increment = .001):
 def get_z(theta1,theta2,p1,p2,r12):
     pass
 
+def print_progress(iteration, total, prefix='', suffix='', decimals=1, bar_length=100):
+    """
+    Call in a loop to create terminal progress bar
+    @params:
+        iteration   - Required  : current iteration (Int)
+        total       - Required  : total iterations (Int)
+        prefix      - Optional  : prefix string (Str)
+        suffix      - Optional  : suffix string (Str)
+        decimals    - Optional  : positive number of decimals in percent complete (Int)
+        bar_length  - Optional  : character length of bar (Int)
+    """
+    str_format = "{0:." + str(decimals) + "f}"
+    percents = str_format.format(100 * (iteration / float(total)))
+    filled_length = int(round(bar_length * iteration / float(total)))
+    bar = '#' * filled_length + '-' * (bar_length - filled_length)
+    t = float(str(time.time())[str(time.time()).find('.'):])
+    if 0 <= t < .25:
+        anim = "/"
+    elif .25 <= t < .5:
+        anim = "-"
+    elif .5 <= t < .75:
+        anim = "\\"
+    else:
+        anim = "-"
+    sys.stdout.write('\r%s |%s| %s%% %s %s' % (prefix, bar, percents, suffix, anim)),
+
+    if iteration == total:
+        sys.stdout.write('\n')
+    sys.stdout.flush()
+
 if __name__ == '__main__':
     # Initialize plant
     p = plant_100MW()
@@ -144,6 +177,7 @@ if __name__ == '__main__':
     for i in range(0,len(max_binary)):
         print "Iteration: %d" % i
         move = {}
+        n = len(spc_move_sequences)
         for row in spc_move_sequences:
             bit = int(spc_move_sequences[row][i])
             if bool(bit):
@@ -219,39 +253,49 @@ if __name__ == '__main__':
     row_in_front = {}
     for row in row_name_to_read_string:
         if row in leading_rows: continue
-        row_in_front[row] = [move_string_to_row_name[row_name_to_read_string[
-            row]]]
-    # row_in_front is now a dict of keys, with the value being the list of
-    # SPCs that are EAST of it, in order!
-    has_changed = True
-    recreated_rows = row_in_front
+        row_in_front[row] = move_string_to_row_name[row_name_to_read_string[
+            row]]
 
-    counter = 1
-    last_iteration = recreated_rows.copy()
-    while has_changed:
-        print "Iteration: %d" % counter
-        counter += 1
+    ##### RECREATE PLANT ROWS BASED ON SERIAL NUMBER
+    counter = 0
+    # seed rows with the leading rows we know
+    recreated_rows = [[f] for f in leading_rows]
+    has_changed = True
+    found = []
+    # Loop as long as recreated_rows changes, and counter less than value
+    while counter < 1000 and has_changed:
         has_changed = False
-        recreated_rows = {}
-        for row in last_iteration:
-            rows_east = last_iteration[row]
-            eastern_row = rows_east[-1]
-            try:
-                next_rows = last_iteration[eastern_row]
-                has_changed = True
-            except KeyError:
-                next_rows = []
-            recreated_rows[row] = rows_east + next_rows
-        if not has_changed:
-            recreated_rows = last_iteration.copy()
-        else:
-            last_iteration = recreated_rows.copy()
-    print "Recreated all rows"
+        # loop through all the known pairs
+        for row in row_in_front:
+            # if we already found it, skip it
+            if row in found: continue
+            left = row
+            right = row_in_front[row]
+            # Loop through all our known row orders
+            for idx,recreated_row in enumerate(recreated_rows):
+                # if you find it already in our known order, add it to left or right
+                # probably only going to add to the left side, given we start
+                # with Easternmost rows...
+                if recreated_row[0] == right:
+                    recreated_rows[idx] = [left] + recreated_row
+                    has_changed = True
+                    found.append(row)
+                    break
+                elif recreated_row[-1] == left:
+                    recreated_rows[idx] = recreated_row + [right]
+                    has_changed = True
+                    found.append(row)
+                    break
+                else:
+                    pass
+        counter += 1
+
+    #### GRADING
     flat_rows = []
     max_cols = 0
     for row in recreated_rows:
-        flat_rows.append([row] + recreated_rows[row])
-        max_cols = max(max_cols,len([row]+recreated_rows[row]))
+        flat_rows.append(row)
+        max_cols = max(max_cols,len(row))
         # print flat_rows[-1]
     # print "Compare to plant:"
     # print p

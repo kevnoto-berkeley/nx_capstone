@@ -354,7 +354,7 @@ class plant_100MW(plant):
     ### Code works very similar to regular plant, just scaled up and with truly random values/order
     def __init__(self):
         # Make a fake site of dimensions [rows,columns]
-        self.size = [70, 60]
+        self.size = [70, 60]#[70, 60]
         self.n = self.size[0] * self.size[1]
         # Initialize rows
         self.true_rows = []
